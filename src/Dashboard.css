@@ -1,0 +1,74 @@
+/* Reset CSS */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  /* Dashboard container */
+  .dashboard-container {
+    display: flex;
+  }
+  
+  /* Header */
+  .header {
+    width: 100%;
+    background-color: #3498db; /* Primary Color */
+    color: white;
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .profile-info {
+    display: flex;
+    align-items: center;
+  }
+  
+  .profile-picture {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 10px;
+  }
+  
+  .username {
+    font-weight: bold;
+  }
+  
+  /* Sidebar Navigation */
+  .sidebar {
+    width: 200px;
+    background-color: #f2f2f2; /* Light grey */
+    padding: 20px;
+  }
+  
+  .navigation-links {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .navigation-links li {
+    padding: 10px 0;
+    cursor: pointer;
+  }
+  
+  /* Main Content Area */
+  .main-content {
+    flex: 1;
+    padding: 20px;
+  }
+  
+  .welcome-message {
+    margin-bottom: 20px;
+  }
+  
+  .media-post-form {
+    margin-bottom: 20px;
+  }
+  
+  .social-media-integration {
+    /* Styles for social media integration options */
+  }
+  
