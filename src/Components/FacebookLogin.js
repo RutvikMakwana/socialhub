@@ -35,7 +35,7 @@ function FacebookLogin() {
     const loadFacebookSDK = () => {
       window.fbAsyncInit = () => {
         window.FB.init({
-          appId: 851196830100813,
+          appId: 937588387831796,
           autoLogAppEvents: true,
           xfbml: true,
           version: "v13.0",
@@ -92,7 +92,7 @@ function FacebookLogin() {
       setIsLoading(true);
       const formData = new FormData();
       formData.append("access_token", pageAccessToken);
-      formData.append("caption", caption); // For both photo and video posts
+      formData.append("caption", caption);
       formData.append("source", mediaFile);
 
       try {
@@ -209,7 +209,6 @@ function FacebookLogin() {
                   <Card key={post.id} className="my-3">
                     <Card.Body>
                       <Card.Text>{post.message}</Card.Text>
-                      {/* Add media display if available */}
                       {post.attachments &&
                         post.attachments.data &&
                         post.attachments.data.length > 0 && (

@@ -20,7 +20,6 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Pass fullName along with email and password
       await firebase.signUpUserWithEmailAndPassword(email, password, fullName);
     } catch (error) {
       console.error("Error signing up:", error);

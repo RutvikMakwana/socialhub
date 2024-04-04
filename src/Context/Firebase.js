@@ -17,43 +17,53 @@ import {
   collection,
   addDoc,
   getDocs,
+  getDoc,
   deleteDoc,
   doc,
+  setDoc,
 } from "firebase/firestore";
 import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
-import "firebase/functions";
+import { getFunctions, httpsCallable } from "firebase/functions";
 
 // Initialize Firebase app
 const firebaseConfig = {
-  apiKey: "AIzaSyCZ76l9JnwFxoBq9TI5sN8jiPe7aontV_c",
-  authDomain: "socialconnect-9bdb9.firebaseapp.com",
-  databaseURL: "https://socialconnect-9bdb9-default-rtdb.firebaseio.com",
-  projectId: "socialconnect-9bdb9",
-  storageBucket: "socialconnect-9bdb9.appspot.com",
-  messagingSenderId: "371734982811",
-  appId: "1:371734982811:web:c0134ab0093b9e7e1a163e",
-  measurementId: "G-0TFBZBZ7P4",
+  apiKey: "AIzaSyDF0E2IMdxqPzAcsrrAfl1H7nRGubu7rYY",
+  authDomain: "social-hub-29b50.firebaseapp.com",
+  projectId: "social-hub-29b50",
+  storageBucket: "social-hub-29b50.appspot.com",
+  messagingSenderId: "411798135842",
+  appId: "1:411798135842:web:d0aed75a23c7a33ae1967b",
 };
 
 const firebaseApp = initializeApp(firebaseConfig);
 const firebaseAuth = getAuth(firebaseApp);
 const firestore = getFirestore(firebaseApp);
 const storage = getStorage(firebaseApp);
+const firebaseFunctions = getFunctions();
+const postTweetFunction = httpsCallable(firebaseFunctions, "postTweet");
 
 const FirebaseContext = createContext(null);
 
 export const FirebaseProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(firebaseAuth, setUser);
+    const unsubscribe = onAuthStateChanged(
+      firebaseAuth,
+      async (firebaseUser) => {
+        if (firebaseUser) {
+          setUser(firebaseUser);
+          await addUserToFirestore(firebaseUser);
+        } else {
+          setUser(null);
+        }
+      }
+    );
     return () => unsubscribe();
   }, []);
 
   const handleAuth = async (authFunction) => {
     try {
       const userCredential = await authFunction();
-      setUser(userCredential.user);
       return userCredential.user;
     } catch (error) {
       console.error("Authentication Error:", error.message);
@@ -69,12 +79,6 @@ export const FirebaseProvider = ({ children }) => {
         password
       );
       await updateProfile(userCredential.user, { displayName: fullName });
-      // Store user information including Twitter access token
-      setUser({
-        ...userCredential.user,
-        accessToken: null, // Initialize with null value
-      });
-      await addUserToFirestore(userCredential.user, fullName, email);
       return userCredential.user;
     } catch (error) {
       console.error("Sign Up Error:", error.message);
@@ -82,13 +86,17 @@ export const FirebaseProvider = ({ children }) => {
     }
   };
 
-  const addUserToFirestore = async (user, fullName, email) => {
+  const addUserToFirestore = async (firebaseUser) => {
     try {
-      await addDoc(collection(firestore, "Users"), {
-        userName: fullName,
-        userEmail: email,
-        userId: user.uid,
-      });
+      const { uid, displayName, email } = firebaseUser;
+      const userRef = doc(firestore, "users", uid);
+      const userDoc = await getDoc(userRef);
+      if (!userDoc.exists()) {
+        await setDoc(userRef, {
+          userName: displayName,
+          userEmail: email,
+        });
+      }
     } catch (error) {
       console.error("Firestore Error:", error.message);
       throw error;
@@ -169,6 +177,22 @@ export const FirebaseProvider = ({ children }) => {
     }
   };
 
+  const postTweet = async (tweet) => {
+    try {
+      const response = await postTweetFunction({ tweet });
+      if (response.data.success) {
+        console.log(
+          "Tweet posted successfully with ID:",
+          response.data.tweetId
+        );
+      } else {
+        console.error("Error posting tweet:", response.data.error);
+      }
+    } catch (error) {
+      console.error("Error calling postTweet function:", error);
+    }
+  };
+
   return (
     <FirebaseContext.Provider
       value={{
@@ -183,6 +207,7 @@ export const FirebaseProvider = ({ children }) => {
         getPosts,
         deletePost,
         getPostURL,
+        postTweet,
       }}
     >
       {children}

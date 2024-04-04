@@ -17,7 +17,6 @@ const PostCard = (props) => {
         }
       } catch (error) {
         console.error("Error fetching post URL:", error);
-        // Handle error, e.g., set a default URL
       }
     };
 
