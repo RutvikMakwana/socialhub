@@ -1,0 +1,98 @@
+/* Updated CSS for Homepage */
+.homepage-container {
+    text-align: center;
+    padding: 20px;
+  }
+  
+  header {
+    margin-bottom: 40px;
+  }
+  
+  h1 {
+    color: #1a237e; /* Dark Blue */
+    font-size: 36px; /* Increase font size */
+    margin-bottom: 10px; /* Add margin bottom */
+  }
+  
+  p {
+    color: #616161; /* Gray */
+  }
+  
+  .features {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    margin-bottom: 40px;
+  }
+  
+  .feature {
+    flex: 1;
+    margin: 0 10px;
+    padding: 20px;
+    background-color: #f5f5f5; /* Light Gray */
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+  }
+  .features-heading {
+    font-size: 24px; /* Adjust font size */
+    color: #1a237e; /* Dark Blue */
+    text-align: center; /* Center align the heading */
+    margin-bottom: 20px; /* Add some space below the heading */
+    display: block; /* Ensure the heading takes up its own line */
+    width: 100%; /* Make sure it spans the entire width */
+  }
+  
+  
+  
+  .feature:hover {
+    transform: translateY(-5px);
+  }
+  
+  .feature img {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 20px;
+  }
+  
+  .feature h3 {
+    color: #1a237e; /* Dark Blue */
+    font-size: 24px; /* Increase font size */
+    margin-bottom: 10px; /* Add margin bottom */
+  }
+  
+  .call-to-action {
+    margin-bottom: 40px;
+  }
+  
+  .btn-signup {
+    padding: 12px 24px;
+    font-size: 18px;
+    border: none;
+    border-radius: 25px;
+    background-color: #42a5f5; /* Blue */
+    color: #ffffff; /* White */
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .btn-signup:hover {
+    background-color: #1e88e5; /* Darker Blue */
+  }
+  
+  footer {
+    margin-top: 40px;
+    color: #777;
+  }
+  
+  /* Responsive Styling */
+  @media screen and (max-width: 768px) {
+    .features {
+      flex-direction: column;
+    }
+    
+    .feature {
+      margin-bottom: 20px;
+    }
+  }
+  

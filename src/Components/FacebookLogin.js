@@ -1,66 +1,46 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { Button, Container, Form, Row, Col, Card } from "react-bootstrap";
-import { useFirebase } from "../Context/Firebase";
+import React, { useState, useEffect } from "react";
+import { Button, Container, Form, Row, Col } from "react-bootstrap";
 import axios from "axios";
+import { useFirebase } from "../Context/Firebase";
 
 function FacebookLogin() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [posts, setPosts] = useState([]);
   const [caption, setCaption] = useState("");
-  const [mediaFile, setMediaFile] = useState(null);
+  const [mediaUrl, setMediaUrl] = useState("");
+  const [mediaFile, setMediaFile] = useState(null); // Define mediaFile state
   const [successMessage, setSuccessMessage] = useState("");
   const [pageAccessToken, setPageAccessToken] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [instagramBusinessAccount, setInstagramBusinessAccount] = useState("");
+  const [pageId, setPageId] = useState("");
+  const [postToInstagram, setPostToInstagram] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // Define isLoading state
   const firebase = useFirebase();
 
-  const fetchUserPosts = useCallback(async () => {
-    try {
-      const response = await axios.get(
-        "https://graph.facebook.com/v19.0/me/posts",
-        {
-          params: {
-            access_token: pageAccessToken,
-            fields: "id,message,attachments",
-          },
-        }
-      );
-      console.log("Response Data:", response.data);
-      setPosts(response.data.data);
-    } catch (error) {
-      console.error("Error fetching user posts:", error);
-    }
-  }, [pageAccessToken]);
-
   useEffect(() => {
-    const loadFacebookSDK = () => {
-      window.fbAsyncInit = () => {
-        window.FB.init({
-          appId: 937588387831796,
-          autoLogAppEvents: true,
-          xfbml: true,
-          version: "v13.0",
-        });
-      };
-
-      (function (d, s, id) {
-        var js,
-          fjs = d.getElementsByTagName(s)[0];
-        if (d.getElementById(id)) return;
-        js = d.createElement(s);
-        js.id = id;
-        js.src = "https://connect.facebook.net/en_US/sdk.js";
-        fjs.parentNode.insertBefore(js, fjs);
-      })(document, "script", "facebook-jssdk");
-    };
-
     loadFacebookSDK();
   }, []);
 
-  useEffect(() => {
-    if (isLoggedIn) {
-      fetchUserPosts();
-    }
-  }, [isLoggedIn, fetchUserPosts]);
+  const loadFacebookSDK = () => {
+    // Load Facebook SDK
+    window.fbAsyncInit = () => {
+      window.FB.init({
+        appId: "1444714743106812",
+        autoLogAppEvents: true,
+        xfbml: true,
+        version: "v13.0",
+      });
+    };
+
+    (function (d, s, id) {
+      var js,
+        fjs = d.getElementsByTagName(s)[0];
+      if (d.getElementById(id)) return;
+      js = d.createElement(s);
+      js.id = id;
+      js.src = "https://connect.facebook.net/en_US/sdk.js";
+      fjs.parentNode.insertBefore(js, fjs);
+    })(document, "script", "facebook-jssdk");
+  };
 
   const handleFacebookLogin = () => {
     window.FB.login((response) => {
@@ -74,30 +54,81 @@ function FacebookLogin() {
   };
 
   const fetchPageAccessToken = () => {
-    window.FB.api("/me/accounts", (response) => {
+    // Fetch page access token
+    window.FB.api("/me/accounts", async (response) => {
       if (response && !response.error) {
         const page = response.data[0];
         setPageAccessToken(page.access_token);
+        setPageId(page.id);
+
+        // Exchange short-lived token for long-lived token
+        try {
+          const longLivedToken = await exchangeShortLivedToken(page.access_token);
+          setPageAccessToken(longLivedToken);
+        } catch (error) {
+          console.error('Error exchanging short-lived token for long-lived token:', error);
+        }
+
+        fetchInstagramBusinessAccount(page.id, page.access_token);
       }
     });
   };
 
+  const exchangeShortLivedToken = async (shortLivedToken) => {
+    // Exchange short-lived token for long-lived token
+    const appId = "1444714743106812";
+    const appSecret = "066f32d8ba5fd7c9cdcfd0352f9af5d7";
+    const response = await axios.get(`https://graph.facebook.com/v13.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${shortLivedToken}`);
+    return response.data.access_token;
+  };
+
+  const fetchInstagramBusinessAccount = async (pageId, pageAccessToken) => {
+    // Fetch Instagram Business Account
+    try {
+      const response = await axios.get(`https://graph.facebook.com/v19.0/${pageId}?fields=instagram_business_account&access_token=${pageAccessToken}`);
+      const igData = response.data;
+      if (igData.instagram_business_account) {
+        setInstagramBusinessAccount(igData.instagram_business_account.id);
+      } else {
+        console.error('Instagram Business Account not found for the Page.');
+      }
+    } catch (error) {
+      console.error('Error fetching Instagram Business Account:', error);
+    }
+  };
+
+  const handleMediaUrlChange = (e) => {
+    setMediaUrl(e.target.value);
+  };
+
   const handleMediaChange = (e) => {
+    // Handle file upload and set mediaFile state
     setMediaFile(e.target.files[0]);
   };
 
   const handlePostSubmit = async (e) => {
     e.preventDefault();
+    if (postToInstagram) {
+      await handleInstagramPost();
+    } else {
+      await handleFacebookPost();
+    }
+  };
+
+  const handleFacebookPost = async () => {
     if (pageAccessToken && (caption.trim() !== "" || mediaFile)) {
       setIsLoading(true);
       const formData = new FormData();
       formData.append("access_token", pageAccessToken);
       formData.append("caption", caption);
-      formData.append("source", mediaFile);
+
+      if (mediaFile) {
+        formData.append("source", mediaFile);
+      }
 
       try {
         const response = await axios.post(
-          mediaFile.type.startsWith("video/")
+          mediaFile && mediaFile.type.startsWith("video/")
             ? "https://graph.facebook.com/me/videos" // Endpoint for video posts
             : "https://graph.facebook.com/me/photos", // Endpoint for photo posts
           formData
@@ -109,9 +140,8 @@ function FacebookLogin() {
         setTimeout(() => {
           setSuccessMessage("");
         }, 3000);
-        await firebase.handlePostSubmit(caption, mediaFile);
-        // Refresh posts after successful submission
-        fetchUserPosts();
+        // Handle post submission to Firebase with platform information
+        await firebase.handlePostSubmit({ caption, mediaFile, platform: 'Facebook' });
       } catch (error) {
         console.error("Error occurred while posting:", error);
       } finally {
@@ -120,127 +150,101 @@ function FacebookLogin() {
     }
   };
 
-  const deletePost = async (postId) => {
-    try {
-      const response = await axios.delete(
-        `https://graph.facebook.com/${postId}`,
-        {
-          params: {
+  const handleInstagramPost = async () => {
+    if (instagramBusinessAccount && pageAccessToken && mediaUrl) {
+      try {
+        // Step 1: Create a media object container
+        const mediaObjectResponse = await axios.post(
+          `https://graph.facebook.com/v19.0/${instagramBusinessAccount}/media`,
+          {
+            image_url: mediaUrl,
+            caption: caption,
             access_token: pageAccessToken,
           },
-        }
-      );
-      console.log("Post deleted successfully:", response.data);
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          }
+        );
 
-      // Delete post from Firebase
-      await firebase.deletePost(postId);
+        const creationId = mediaObjectResponse.data.id;
 
-      // Refresh posts after deletion
-      fetchUserPosts();
-    } catch (error) {
-      console.error("Error deleting post:", error);
+        // Step 2: Publish the media object container
+        await axios.post(
+          `https://graph.facebook.com/v19.0/${instagramBusinessAccount}/media_publish`,
+          {
+            creation_id: creationId,
+            access_token: pageAccessToken,
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          }
+        );
+
+        setSuccessMessage('Photo submitted to Instagram successfully!');
+        setCaption('');
+        setMediaUrl('');
+        // Handle post submission to Firebase with platform information
+        await firebase.handlePostSubmit({ caption, mediaUrl, platform: 'Instagram' });
+      } catch (error) {
+        console.error('Error publishing photo to Instagram:', error.response.data.error.message);
+        // Log the entire error response for debugging
+        console.error(error.response);
+      }
+    } else {
+      console.error('Please enter a valid media URL and ensure you have a valid page access token.');
     }
   };
 
-  const handleLogout = () => {
-    window.FB.logout(() => {
-      setIsLoggedIn(false);
-      setPosts([]); // Clear posts when logging out
-    });
-  };
-
   return (
-    <Container className="py-5">
-      <Row className="justify-content-center">
-        <Col md={8}>
-          <div className="text-center mb-4">
-            <h2>Facebook Login</h2>
-            {!isLoggedIn && (
-              <Button onClick={handleFacebookLogin} variant="primary">
-                Login with Facebook
-              </Button>
-            )}
-          </div>
-          {isLoggedIn && (
-            <div>
-              <Button onClick={handleLogout} variant="danger">
-                Logout
-              </Button>
-              <Form onSubmit={handlePostSubmit} className="mt-4">
-                <Form.Group controlId="caption">
-                  <Form.Label>Post Text</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={3}
-                    value={caption}
-                    onChange={(e) => setCaption(e.target.value)}
-                    placeholder="Enter your post text"
-                  />
-                </Form.Group>
-                <Form.Group controlId="mediaFile">
-                  <Form.Label>Upload Photo or Video</Form.Label>
-                  <Form.Control
-                    type="file"
-                    accept="image/*, video/*"
-                    onChange={handleMediaChange}
-                  />
-                </Form.Group>
-                <Button type="submit" variant="success">
-                  Post
-                </Button>
-              </Form>
-              {isLoading && (
-                <div className="text-center mt-4">
-                  <img
-                    src="./loading.gif"
-                    alt="Posting..."
-                    style={{ width: "50px" }}
-                  />
-                </div>
-              )}
-              {successMessage && (
-                <p className="text-center mt-4 text-success">
-                  {successMessage}
-                </p>
-              )}
-              <div className="mt-4">
-                <h3>Your Posts</h3>
-                {posts.map((post) => (
-                  <Card key={post.id} className="my-3">
-                    <Card.Body>
-                      <Card.Text>{post.message}</Card.Text>
-                      {post.attachments &&
-                        post.attachments.data &&
-                        post.attachments.data.length > 0 && (
-                          <Card.Img
-                            src={post.attachments.data[0].media.image.src}
-                            alt="Post Media"
-                            style={{ maxWidth: "100%" }}
-                          />
-                        )}
-                      <div className="mt-3">
-                        <Button
-                          onClick={() => deletePost(post.id)}
-                          variant="info"
-                          className="mr-2"
-                        >
-                          Update
-                        </Button>
-                        <Button
-                          onClick={() => deletePost(post.id)}
-                          variant="danger"
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </Card.Body>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
-        </Col>
-      </Row>
+    <Container>
+      <h1>Social Media Post</h1>
+      {!isLoggedIn ? (
+        <Button onClick={handleFacebookLogin}>Login with Facebook</Button>
+      ) : (
+        <Form onSubmit={handlePostSubmit}>
+          <Form.Group controlId="caption">
+            <Form.Label>Caption</Form.Label>
+            <Form.Control
+              type="text"
+              placeholder="Enter caption"
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
+            />
+          </Form.Group>
+          <Form.Group controlId="mediaUrl">
+            <Form.Label>Media URL</Form.Label>
+            <Form.Control
+              type="text"
+              placeholder="Enter media URL"
+              value={mediaUrl}
+              onChange={handleMediaUrlChange}
+            />
+          </Form.Group>
+          <Form.Group controlId="mediaFile">
+            <Form.Label>Media File</Form.Label>
+            <Form.Control
+              type="file"
+              onChange={handleMediaChange}
+            />
+          </Form.Group>
+          <Form.Group controlId="postToInstagram">
+            <Form.Check
+              type="checkbox"
+              label="Post to Instagram"
+              checked={postToInstagram}
+              onChange={(e) => setPostToInstagram(e.target.checked)}
+            />
+          </Form.Group>
+          <Button variant="primary" type="submit" disabled={isLoading}>
+            {isLoading ? "Posting..." : "Submit"}
+          </Button>
+          {successMessage && <p className="text-success">{successMessage}</p>}
+        </Form>
+      )}
     </Container>
   );
 }

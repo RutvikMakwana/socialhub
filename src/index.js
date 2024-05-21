@@ -5,13 +5,16 @@ import App from "./App";
 import reportWebVitals from "./reportWebVitals";
 import { FirebaseProvider } from "./Context/Firebase";
 import { BrowserRouter } from "react-router-dom";
+import { TwitterProvider } from "./Context/TwitterContext";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <React.StrictMode>
     <BrowserRouter>
       <FirebaseProvider>
-        <App />
+        <TwitterProvider>
+          <App />
+        </TwitterProvider>
       </FirebaseProvider>
     </BrowserRouter>
   </React.StrictMode>

@@ -23,7 +23,7 @@ import {
   setDoc,
 } from "firebase/firestore";
 import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
-import { getFunctions, httpsCallable } from "firebase/functions";
+import axios from "axios";
 
 // Initialize Firebase app
 const firebaseConfig = {
@@ -39,8 +39,7 @@ const firebaseApp = initializeApp(firebaseConfig);
 const firebaseAuth = getAuth(firebaseApp);
 const firestore = getFirestore(firebaseApp);
 const storage = getStorage(firebaseApp);
-const firebaseFunctions = getFunctions();
-const postTweetFunction = httpsCallable(firebaseFunctions, "postTweet");
+
 
 const FirebaseContext = createContext(null);
 
@@ -127,19 +126,25 @@ export const FirebaseProvider = ({ children }) => {
 
   const isLoggedIn = !!user;
 
-  const handlePostSubmit = async (caption, mediaFile, mediaType) => {
+  const handlePostSubmit = async ({ caption, mediaFile, mediaUrl, platform }) => {
     try {
-      const mediaRef = ref(
-        storage,
-        `uploads/posts/${Date.now()}-${mediaFile.name}`
-      );
-      await uploadBytes(mediaRef, mediaFile);
-      const mediaURL = await getDownloadURL(mediaRef);
+      if (!platform) {
+        throw new Error("Platform is not defined");
+      }
+  
+      let mediaURL = mediaUrl; // Use mediaUrl if provided
+  
+      if (mediaFile) {
+        const mediaRef = ref(storage, `uploads/posts/${Date.now()}-${mediaFile.name}`);
+        await uploadBytes(mediaRef, mediaFile);
+        mediaURL = await getDownloadURL(mediaRef); // Override mediaURL with uploaded file URL
+      }
+  
       await addDoc(collection(firestore, "posts"), {
         userID: user.uid,
         caption,
         mediaURL,
-        mediaType,
+        platform,
         createdAt: new Date(),
       });
     } catch (error) {
@@ -147,7 +152,8 @@ export const FirebaseProvider = ({ children }) => {
       throw error;
     }
   };
-
+  
+  
   const getPosts = async () => {
     try {
       const querySnapshot = await getDocs(collection(firestore, "posts"));
@@ -170,26 +176,42 @@ export const FirebaseProvider = ({ children }) => {
 
   const getPostURL = async (path) => {
     try {
+      // Check if the path is a complete URL
+      const isExternalURL = path.startsWith('http://') || path.startsWith('https://');
+      if (isExternalURL) {
+        return path; // Return the external URL as it is
+      }
+      // If not, assume it's a Firebase Storage path and get the download URL
       return await getDownloadURL(ref(storage, path));
     } catch (error) {
       console.error("Error getting post URL:", error);
       throw error;
     }
   };
+  
 
-  const postTweet = async (tweet) => {
+  //For Twitter
+  const twitterAuth = async () => {
     try {
-      const response = await postTweetFunction({ tweet });
-      if (response.data.success) {
-        console.log(
-          "Tweet posted successfully with ID:",
-          response.data.tweetId
-        );
-      } else {
-        console.error("Error posting tweet:", response.data.error);
-      }
+      const response = await axios.get("http://localhost:5000/twitter/auth");
+      const { oauthToken } = response.data;
+      window.location.href = `https://api.twitter.com/oauth/authenticate?oauth_token=${oauthToken}`;
     } catch (error) {
-      console.error("Error calling postTweet function:", error);
+      console.error("Twitter Auth Error:", error);
+    }
+  };
+  
+  const postTweet = async (oauthAccessToken, oauthAccessTokenSecret, status) => {
+    try {
+      const response = await axios.post("http://localhost:5000/twitter/post", {
+        oauthAccessToken,
+        oauthAccessTokenSecret,
+        status,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Post Tweet Error:", error);
+      throw error;
     }
   };
 
@@ -207,6 +229,7 @@ export const FirebaseProvider = ({ children }) => {
         getPosts,
         deletePost,
         getPostURL,
+        twitterAuth,
         postTweet,
       }}
     >

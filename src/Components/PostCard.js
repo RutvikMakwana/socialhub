@@ -1,35 +1,21 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Card, Button } from "react-bootstrap";
-import { useFirebase } from "../Context/Firebase";
 
-const PostCard = (props) => {
-  const firebase = useFirebase();
-  const [url, setURL] = useState(null);
+const PostCard = ({ post, onDelete }) => {
+  const { caption, mediaURL, platform, id } = post;
 
-  useEffect(() => {
-    const fetchPostURL = async () => {
-      try {
-        const postURL = await firebase.getPostURL(props.mediaURL);
-        if (postURL) {
-          setURL(postURL);
-        } else {
-          console.error("Error: Post URL is undefined.");
-        }
-      } catch (error) {
-        console.error("Error fetching post URL:", error);
-      }
-    };
-
-    fetchPostURL();
-  }, [firebase, props.mediaURL]);
+  const handleDelete = () => {
+    onDelete(id);
+  };
 
   return (
     <Card className="shadow-sm mb-4">
-      <Card.Img variant="top" src={url} />
+      {mediaURL && <Card.Img variant="top" src={mediaURL} />}
       <Card.Body>
-        <Card.Title>{props.caption}</Card.Title>
-        <Button variant="primary" className="mt-2">
-          Read more
+        <Card.Title>{caption}</Card.Title>
+        <Card.Text>Platform: {platform}</Card.Text>
+        <Button variant="danger" onClick={handleDelete}>
+          Delete
         </Button>
       </Card.Body>
     </Card>

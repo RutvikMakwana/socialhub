@@ -23,13 +23,22 @@ const Posts = () => {
     }
   }, [firebase, fetchPosts]);
 
+  const handleDeletePost = async (postId) => {
+    try {
+      await firebase.deletePost(postId);
+      setPosts((prevPosts) => prevPosts.filter((post) => post.id !== postId));
+    } catch (error) {
+      console.error("Error deleting post:", error.message);
+    }
+  };
+
   return (
     <div className="container mt-5">
       {isLoggedIn && (
         <>
           <h1>All Posts</h1>
           {posts.map((post) => (
-            <PostCard key={post.id} {...post} />
+            <PostCard key={post.id} post={post} onDelete={handleDeletePost} />
           ))}
         </>
       )}

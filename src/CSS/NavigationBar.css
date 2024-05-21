@@ -1,0 +1,31 @@
+.navbar {
+  background-color: #343a40 !important; /* Dark background */
+}
+
+.navbar-brand {
+  color: #fff !important; /* White text */
+  font-weight: bold;
+}
+
+.nav-link {
+  color: #fff !important; /* White text */
+  text-decoration: none;
+  margin-right: 20px;
+  font-weight: bold;
+  transition: color 0.3s ease; /* Smooth color transition on hover */
+}
+
+.nav-link.active {
+  color: #ffc107 !important; /* Yellow */
+}
+
+.btn-outline-light {
+  color: #fff !important; /* White text */
+  border-color: #fff !important; /* White border */
+  transition: background-color 0.3s ease, color 0.3s ease; /* Smooth transition */
+}
+
+.btn-outline-light:hover {
+  background-color: #fff !important; /* White background on hover */
+  color: #343a40 !important; /* Dark text on hover */
+}
