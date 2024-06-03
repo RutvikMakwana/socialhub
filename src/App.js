@@ -8,14 +8,16 @@ import Login from "./Pages/Login";
 import NavigationBar from "./Components/NavigationBar";
 import Dashboard from "./Components/Dashboard";
 import Posts from "./Pages/Posts";
-import TwitterCallback from "./Pages/TwitterCallback";
-import Tweet from "./Pages/Tweet";
+import Tweet from "./Components/Tweet";
+import TwitterCallback from "./Components/TwitterCallback";
 import { useTwitter } from "./Context/TwitterContext";
+import { TwitterProvider } from "./Context/TwitterContext";
 
 function App() {
   const { setTwitterTokens } = useTwitter();
   return (
     <>
+    <TwitterProvider>
       <NavigationBar />
       <Routes>
         <Route path="/" element={<Home />} />
@@ -23,12 +25,10 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/posts" element={<Posts />} />
-        <Route
-          path="/twitter/callback"
-          element={<TwitterCallback setTwitterTokens={setTwitterTokens} />}
-        />
+        <Route path="/twitter/callback" element={<TwitterCallback />} />
         <Route path="/tweet" element={<Tweet />} />
       </Routes>
+      </TwitterProvider>
     </>
   );
 }

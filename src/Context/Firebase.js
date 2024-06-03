@@ -23,7 +23,7 @@ import {
   setDoc,
 } from "firebase/firestore";
 import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
-import axios from "axios";
+
 
 // Initialize Firebase app
 const firebaseConfig = {
@@ -190,31 +190,6 @@ export const FirebaseProvider = ({ children }) => {
   };
   
 
-  //For Twitter
-  const twitterAuth = async () => {
-    try {
-      const response = await axios.get("http://localhost:5000/twitter/auth");
-      const { oauthToken } = response.data;
-      window.location.href = `https://api.twitter.com/oauth/authenticate?oauth_token=${oauthToken}`;
-    } catch (error) {
-      console.error("Twitter Auth Error:", error);
-    }
-  };
-  
-  const postTweet = async (oauthAccessToken, oauthAccessTokenSecret, status) => {
-    try {
-      const response = await axios.post("http://localhost:5000/twitter/post", {
-        oauthAccessToken,
-        oauthAccessTokenSecret,
-        status,
-      });
-      return response.data;
-    } catch (error) {
-      console.error("Post Tweet Error:", error);
-      throw error;
-    }
-  };
-
   return (
     <FirebaseContext.Provider
       value={{
@@ -229,8 +204,6 @@ export const FirebaseProvider = ({ children }) => {
         getPosts,
         deletePost,
         getPostURL,
-        twitterAuth,
-        postTweet,
       }}
     >
       {children}
